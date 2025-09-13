@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: team-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: slice
+    password: slice
+    url: xxxx
+  jackson:
+    property-naming-strategy: SNAKE_CASE # 将驼峰自动转为蛇形
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+server:
+  address: 127.0.0.1
+  port: 8001
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: isDelete
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+oss:
+  endpoint: xxx
+  bucket-name: xxxx
+  access-key: xxxx
+  access-secret: xxxx
+  expire-time: 3600
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled: true
