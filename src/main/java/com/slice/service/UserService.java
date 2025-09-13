@@ -1,7 +1,9 @@
 package com.slice.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.slice.constant.UserConstant;
 import com.slice.dao.user.UserQueryRequest;
+import com.slice.dao.user.UserUpdateRequest;
 import com.slice.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.slice.vo.user.UserInfoVO;
@@ -35,7 +37,20 @@ public interface UserService extends IService<User> {
      */
     Page<UserInfoVO> userQuery(UserQueryRequest userQueryRequest);
 
+    /**
+     * 用户更新
+     * @param userUpdateRequest 参数
+     * @return
+     */
+    void userUpdate(UserUpdateRequest userUpdateRequest);
 
+
+    /**
+     * 用户删除
+     * @param id 用户id
+     * @return
+     */
+    void userDelete(long id);
 
     /**
      * 获取脱敏的已登录用户信息
@@ -50,7 +65,14 @@ public interface UserService extends IService<User> {
      */
     User getCurrentUser();
 
-
+    /**
+     * 是否为管理员
+     * @param user
+     * @return
+     */
+    default boolean isAdmin(User user) {
+        return user.getUserRole().equals(UserConstant.USER_ADMIN_ROLE);
+    }
 
 
 

@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.slice.constant.UserConstant;
 import com.slice.dao.user.UserQueryRequest;
+import com.slice.dao.user.UserUpdateRequest;
 import com.slice.entity.User;
 import com.slice.enums.ErrorCode;
 import com.slice.exception.BusinessException;
@@ -107,14 +108,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Page<UserInfoVO> userQuery(UserQueryRequest userQueryRequest) {
-
         String phone = userQueryRequest.getPhone();
         String username = userQueryRequest.getUsername();
         int pageNo = userQueryRequest.getPageNo();
         int pageSize = userQueryRequest.getPageSize();
-        if(pageNo <= 0 || pageSize <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "分页参数错误");
-        }
         List<String> tagList = userQueryRequest.getTagList();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         if(StringUtils.isNotBlank(phone)) {
@@ -138,6 +135,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userInfoVOPage.setRecords(userInfoVOS);
         userInfoVOPage.setTotal(userPage.getTotal());
         return userInfoVOPage;
+    }
+
+    @Override
+    public void userUpdate(UserUpdateRequest userUpdateRequest) {
+        User user = new User();
+        user.setPassword(userUpdateRequest.getPassword());
+        user.setUsername(userUpdateRequest.getUsername());
+        user.setAvatar(userUpdateRequest.getAvatar());
+        user.setEmail(userUpdateRequest.getEmail());
+        if(!userUpdateRequest.getTagList().isEmpty()) {
+            Gson gson = new Gson();
+            user.setTagList(gson.toJson(userUpdateRequest.getTagList()));
+        }
+        int i = userMapper.updateById(user);
+        if(i <= 0) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+    }
+
+    @Override
+    public void userDelete(long id) {
+        int i = userMapper.deleteById(id);
+        if(i <= 0) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
     }
 
     @Override
