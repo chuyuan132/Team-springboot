@@ -70,7 +70,7 @@ public interface UserService extends IService<User> {
      * @param user
      * @return
      */
-    default boolean isAdmin(User user) {
+    default public boolean isAdmin(User user) {
         return user.getUserRole().equals(UserConstant.USER_ADMIN_ROLE);
     }
 

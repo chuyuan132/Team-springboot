@@ -48,9 +48,9 @@ public class UserController {
     }
 
 
-    @PostMapping("/login")
+    @GetMapping("/login")
     @Operation(summary = "用户登录")
-    public BaseResponse<UserInfoVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<UserInfoVO> userLogin(UserLoginRequest userLoginRequest, HttpServletRequest request) {
         if(userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
