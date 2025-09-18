@@ -20,13 +20,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -47,13 +44,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private UserMapper userMapper;
 
-
     @Resource
     private DateFormatUtils dateFormatUtils;
 
 
     @Override
-    public long userRegister(String phone, String password) {
+    public void userRegister(String phone, String password) {
         synchronized (phone.intern()) {
             Matcher matcher = Pattern.compile("^1[3-9]\\d{9}$").matcher(phone);
 
@@ -67,19 +63,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("phone", phone);
-            Long count = userMapper.selectCount(queryWrapper);
-            if(count > 0) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户已存在");
+            User user = userMapper.selectOne(queryWrapper, false);
+            if(user == null) {
+                String newPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
+                User newUser = new User();
+                newUser.setPhone(phone);
+                newUser.setPassword(newPassword);
+                int saveResult = userMapper.insert(newUser);
+                if(saveResult <= 0) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户注册失败");
+                }
+            } else {
+                if(user.getIsDelete() == 1) {
+                    user.setIsDelete(0);
+                    int i = userMapper.updateById(user);
+                    if(i < 0) {
+                        throw new BusinessException(ErrorCode.SYSTEM_ERROR,"注册失败");
+                    }
+                } else {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户已存在");
+                }
             }
-            String newPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
-            User user = new User();
-            user.setPhone(phone);
-            user.setPassword(newPassword);
-            int saveResult = userMapper.insert(user);
-            if(saveResult <= 0) {
-                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户注册失败");
-            }
-            return user.getId();
         }
     }
 
@@ -101,7 +105,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         userQueryWrapper.eq("password", encrpytPassword);
         User user = userMapper.selectOne(userQueryWrapper);
         if(user == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户不存在或密码错误");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户不存在");
+        }
+        if(!user.getPassword().equals(encrpytPassword)) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "密码错误");
         }
         return getUserInfoVO(user);
     }
@@ -120,11 +127,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(StringUtils.isNotBlank(username)) {
             userQueryWrapper.like("username", username);
         }
-        if(!tagList.isEmpty()) {
+        if(tagList != null && !tagList.isEmpty()) {
             tagList.stream().filter(StringUtils::isNotBlank).forEach(val -> {
                 userQueryWrapper.like("tag_list", val);
             });
         }
+        System.out.println(pageNo);
+        System.out.println(pageSize);
         Page<User> userPage = userMapper.selectPage(new Page<>(pageNo, pageSize), userQueryWrapper);
         // 转换对象
         List<UserInfoVO> userInfoVOS = userPage.getRecords().stream()
@@ -140,10 +149,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void userUpdate(UserUpdateRequest userUpdateRequest) {
         User user = new User();
+        user.setId(userUpdateRequest.getId());
         user.setPassword(userUpdateRequest.getPassword());
         user.setUsername(userUpdateRequest.getUsername());
         user.setAvatar(userUpdateRequest.getAvatar());
         user.setEmail(userUpdateRequest.getEmail());
+        user.setProfile(userUpdateRequest.getProfile());
         if(!userUpdateRequest.getTagList().isEmpty()) {
             Gson gson = new Gson();
             user.setTagList(gson.toJson(userUpdateRequest.getTagList()));
@@ -156,6 +167,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void userDelete(long id) {
+        User user = userMapper.selectById(id);
+        if(user == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户不存在，无法删除");
+        }
         int i = userMapper.deleteById(id);
         if(i <= 0) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);

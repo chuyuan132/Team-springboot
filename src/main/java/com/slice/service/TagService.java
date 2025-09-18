@@ -5,5 +5,4 @@ import com.slice.entity.Tag;
 
 
 public interface TagService extends IService<Tag> {
-
 }

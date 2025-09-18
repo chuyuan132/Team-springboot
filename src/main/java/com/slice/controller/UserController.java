@@ -35,25 +35,19 @@ public class UserController {
     @PostMapping("/register")
     @Operation(summary = "用户注册")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
-        if(userRegisterRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
         String password = userRegisterRequest.getPassword();
         String phone = userRegisterRequest.getPhone();
         if(StringUtils.isAnyBlank(password, phone)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long result = userService.userRegister(phone, password);
-        return ResultUtils.success(result);
+        userService.userRegister(phone, password);
+        return ResultUtils.success(null);
     }
 
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     @Operation(summary = "用户登录")
-    public BaseResponse<UserInfoVO> userLogin(UserLoginRequest userLoginRequest, HttpServletRequest request) {
-        if(userLoginRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+    public BaseResponse<UserInfoVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
         String password = userLoginRequest.getPassword();
         String phone = userLoginRequest.getPhone();
         if(StringUtils.isAnyBlank(password, phone)) {
@@ -66,14 +60,7 @@ public class UserController {
 
     @GetMapping("/list")
     @Operation(summary = "分页查询用户")
-    public BaseResponse<Page<UserInfoVO>> userQueryByPage(@RequestBody UserQueryRequest userQueryRequest) {
-        User currentUser = userService.getCurrentUser();
-        if(!userService.isAdmin(currentUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        if(userQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+    public BaseResponse<Page<UserInfoVO>> userQueryByPage(UserQueryRequest userQueryRequest) {
         if(userQueryRequest.getPageNo() <= 0 || userQueryRequest.getPageSize() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "分页参数错误");
         }
@@ -81,15 +68,12 @@ public class UserController {
         return ResultUtils.success(userInfoVOPage);
     }
 
-    @GetMapping("/update")
+    @PostMapping("/update")
     @Operation(summary = "用户更新")
     public BaseResponse<?> userUpdate(@RequestBody UserUpdateRequest userUpdateRequest) {
         User currentUser = userService.getCurrentUser();
         if(!userService.isAdmin(currentUser) && !userUpdateRequest.getId().equals(currentUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        if(userUpdateRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         userService.userUpdate(userUpdateRequest);
         return ResultUtils.success(null);
@@ -97,7 +81,7 @@ public class UserController {
 
     @GetMapping("/delete")
     @Operation(summary = "用户删除")
-    public BaseResponse<?> userDelete(long id) {
+    public BaseResponse<?> userDelete(@RequestParam("id") Long id) {
         User currentUser = userService.getCurrentUser();
         if(!userService.isAdmin(currentUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
