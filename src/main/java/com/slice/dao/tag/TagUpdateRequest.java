@@ -9,10 +9,10 @@ public class TagUpdateRequest implements Serializable {
 
     private static final long serialVersionUID = 1463672933474333769L;
 
-    private long id;
+    private Long id;
 
     private String name;
 
-    private int parentId = 0;
+    private Long parentId = 0L;
 
 }

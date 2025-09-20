@@ -17,6 +17,7 @@ import com.slice.utils.DateFormatUtils;
 import com.slice.vo.user.UserInfoVO;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -33,12 +34,15 @@ import java.util.regex.Pattern;
  * 用户服务实现
 */
 @Service
+@Slf4j
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService{
 
     /**
      * 盐值
      */
     public static final String SALT = "SLICE_ZCY";
+
+    private final static Gson gson = new Gson();
 
 
     @Resource
@@ -89,6 +93,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserInfoVO userLogin(String phone, String password) {
+        if(StringUtils.isAnyBlank(password, phone)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         Matcher matcher = Pattern.compile("^1[3-9]\\d{9}$").matcher(phone);
 
         if(!matcher.matches()) {
@@ -98,16 +105,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(password.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能少于8位");
         }
-        String encrpytPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
+        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + password).getBytes());
 
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("phone", phone);
-        userQueryWrapper.eq("password", encrpytPassword);
+        userQueryWrapper.eq("password", encryptPassword);
         User user = userMapper.selectOne(userQueryWrapper);
         if(user == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户不存在");
         }
-        if(!user.getPassword().equals(encrpytPassword)) {
+        if(!user.getPassword().equals(encryptPassword)) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "密码错误");
         }
         return getUserInfoVO(user);
@@ -115,6 +122,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public Page<UserInfoVO> userQuery(UserQueryRequest userQueryRequest) {
+        if(userQueryRequest.getPageNo() <= 0 || userQueryRequest.getPageSize() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "分页参数错误");
+        }
         String phone = userQueryRequest.getPhone();
         String username = userQueryRequest.getUsername();
         int pageNo = userQueryRequest.getPageNo();
@@ -132,8 +142,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 userQueryWrapper.like("tag_list", val);
             });
         }
-        System.out.println(pageNo);
-        System.out.println(pageSize);
+        log.info("分页查询用户，页码：{}, 每页大小：{}", pageNo, pageSize);
         Page<User> userPage = userMapper.selectPage(new Page<>(pageNo, pageSize), userQueryWrapper);
         // 转换对象
         List<UserInfoVO> userInfoVOS = userPage.getRecords().stream()
@@ -148,6 +157,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void userUpdate(UserUpdateRequest userUpdateRequest) {
+        if(userUpdateRequest.getId() == null || userUpdateRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "id必传");
+        }
         User user = new User();
         user.setId(userUpdateRequest.getId());
         user.setPassword(userUpdateRequest.getPassword());
@@ -156,7 +168,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setEmail(userUpdateRequest.getEmail());
         user.setProfile(userUpdateRequest.getProfile());
         if(!userUpdateRequest.getTagList().isEmpty()) {
-            Gson gson = new Gson();
             user.setTagList(gson.toJson(userUpdateRequest.getTagList()));
         }
         int i = userMapper.updateById(user);
@@ -166,10 +177,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public void userDelete(long id) {
-        User user = userMapper.selectById(id);
-        if(user == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户不存在，无法删除");
+    public void userDelete(Long id) {
+        if(id == null || id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         int i = userMapper.deleteById(id);
         if(i <= 0) {
@@ -185,8 +195,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserInfoVO userInfoVO = new UserInfoVO();
         BeanUtils.copyProperties(user, userInfoVO);
         if(!StringUtils.isBlank(user.getTagList())) {
-            Gson gson = new Gson();
-            List<String> tagList = gson.fromJson(user.getTagList(), new TypeToken<List<String>>(){}).stream().filter(StringUtils::isBlank).toList();
+            List<String> tagList = gson.fromJson(user.getTagList(), new TypeToken<List<String>>(){}).stream().filter(StringUtils::isNotBlank).toList();
             userInfoVO.setTagList(tagList);
         } else {
             userInfoVO.setTagList(Collections.emptyList());

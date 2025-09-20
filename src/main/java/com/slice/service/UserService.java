@@ -49,7 +49,7 @@ public interface UserService extends IService<User> {
      * @param id 用户id
      * @return
      */
-    void userDelete(long id);
+    void userDelete(Long id);
 
     /**
      * 获取脱敏的已登录用户信息

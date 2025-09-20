@@ -21,9 +21,8 @@ create table if not exists user (
 create table if not exists tag (
     id bigint auto_increment comment 'id',
     name varchar(255) not null comment '标签名字',
-    parent_id bigint null comment '父id',
+    parent_id bigint null default 0 comment '父id',
     created_at datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     updated_at datetime default CURRENT_TIMESTAMP not null comment '更新时间',
-    is_delete tinyint default 0 comment '是否删除 0 不删除 1 删除',
     primary key(id)
     ) comment '标签表' collate utf8mb4_general_ci

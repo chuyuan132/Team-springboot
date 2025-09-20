@@ -12,7 +12,7 @@ import java.util.List;
 @Getter
 public enum FileUploadEnums {
 
-    IMAGE_TYPE("image","图片",  10 * FileUploadEnums.MB, Arrays.asList("jpeg", "jpg", "svg", "png", "webp"));
+    IMAGE_TYPE("image","图片",  200 * FileUploadEnums.MB, Arrays.asList("jpeg", "jpg", "svg", "png", "webp"));
 
     private final String type;
     private final String text;

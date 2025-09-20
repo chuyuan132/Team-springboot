@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.slice.dao.tag.TagCreateRequest;
 import com.slice.dao.tag.TagUpdateRequest;
 import com.slice.entity.Tag;
+import com.slice.vo.tag.TagQueryVo;
+
+import java.util.List;
 
 
 public interface TagService extends IService<Tag> {
@@ -21,5 +24,13 @@ public interface TagService extends IService<Tag> {
      */
     void tagUpdate(TagUpdateRequest tagUpdateRequest);
 
+    /**
+     * 删除标签
+     * @param id
+     */
+    void tagDelete(Long id);
+
+
+    List<TagQueryVo> tagQueryList();
 
 }

@@ -17,6 +17,10 @@ public class ResultUtils {
         return new BaseResponse<>(errorCode);
     }
 
+    public static BaseResponse<?> error(ErrorCode errorCode, String message) {
+
+        return new BaseResponse<>(errorCode, message);
+    }
 
     public static BaseResponse<?> error(int code, String message) {
         return new BaseResponse<>(code, message);

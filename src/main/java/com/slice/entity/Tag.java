@@ -46,12 +46,6 @@ public class Tag implements Serializable {
     @TableField(value = "updated_at")
     private Date updatedAt;
 
-    /**
-     * 是否删除 0 不删除 1 删除
-     */
-    @TableField(value = "is_delete")
-    private Integer isDelete;
-
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

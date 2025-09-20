@@ -11,6 +11,6 @@ public class TagCreateRequest implements Serializable {
 
     private String name;
 
-    private long parentId = 0L;
+    private Long parentId;
 
 }

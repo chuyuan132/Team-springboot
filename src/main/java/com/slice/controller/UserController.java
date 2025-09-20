@@ -5,7 +5,6 @@ import com.slice.common.BaseResponse;
 import com.slice.constant.UserConstant;
 import com.slice.dao.user.UserQueryRequest;
 import com.slice.dao.user.UserUpdateRequest;
-import com.slice.entity.User;
 import com.slice.utils.ResultUtils;
 import com.slice.dao.user.UserLoginRequest;
 import com.slice.dao.user.UserRegisterRequest;
@@ -71,22 +70,17 @@ public class UserController {
     @PostMapping("/update")
     @Operation(summary = "用户更新")
     public BaseResponse<?> userUpdate(@RequestBody UserUpdateRequest userUpdateRequest) {
-        User currentUser = userService.getCurrentUser();
-        if(!userService.isAdmin(currentUser) && !userUpdateRequest.getId().equals(currentUser.getId())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+       if(userUpdateRequest.getId() == null || userUpdateRequest.getId() <= 0) {
+           throw new BusinessException(ErrorCode.PARAMS_ERROR, "id必传");
+       }
         userService.userUpdate(userUpdateRequest);
         return ResultUtils.success(null);
     }
 
-    @GetMapping("/delete")
+    @DeleteMapping("/{id}")
     @Operation(summary = "用户删除")
-    public BaseResponse<?> userDelete(@RequestParam("id") Long id) {
-        User currentUser = userService.getCurrentUser();
-        if(!userService.isAdmin(currentUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        if(id <= 0) {
+    public BaseResponse<?> userDelete(@PathVariable("id") Long id) {
+        if(id == null || id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         userService.userDelete(id);

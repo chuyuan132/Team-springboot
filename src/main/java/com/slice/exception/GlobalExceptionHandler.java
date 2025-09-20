@@ -28,12 +28,21 @@ public class GlobalExceptionHandler {
 
 
     /**
-     * 处理参数缺失或无请求体异常
+     * 处理参数缺失
      */
-    @ExceptionHandler(value={HttpMessageNotReadableException.class,MissingServletRequestParameterException.class})
+    @ExceptionHandler(MissingServletRequestParameterException.class)
     public BaseResponse<?> paramsExceptionHandler(Exception e) {
         log.error("MissingServletRequestParameterException: {}", e.getMessage(), e);
         return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+    }
+
+    /**
+     * 处理参数缺失
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public BaseResponse<?> notReadableExceptionHandler(Exception e) {
+        log.error("HttpMessageNotReadableException: {}", e.getMessage(), e);
+        return ResultUtils.error(ErrorCode.PARAMS_ERROR,"请求体错误或者为空");
     }
 
     /**

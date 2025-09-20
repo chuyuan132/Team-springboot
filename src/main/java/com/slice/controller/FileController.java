@@ -37,24 +37,20 @@ public class FileController {
     @PostMapping(value="/upload")
     @Operation(summary = "文件上传")
     public BaseResponse<String> fileUpload(@RequestParam("file") MultipartFile multipartFile, FileUploadRequest params) {
-        if(multipartFile.isEmpty()) {
+        System.out.println(multipartFile);
+        System.out.println(params.toString());
+        if(multipartFile == null || multipartFile.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"文件为空");
         }
-        if(params == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
         if(StringUtils.isAnyBlank(params.getBiz())) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"biz必传");
         }
-
         FileUploadEnums fileUploadEnum = FileUploadEnums.getFileUploadEnumByValue(params.getBiz());
-
-        // 1、是否支持该业务类型的文件处理
+        // 是否支持该业务类型的文件处理
         if(fileUploadEnum == null) {
             throw new BusinessException(ErrorCode.NO_SUPPORT_ERROR,"无效业务类型");
         }
-
-        // 2、根据业务类型区分，校验文件
+        // 根据业务类型区分，校验文件
         if(fileUploadEnum.getMaxSize() < multipartFile.getSize()) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"文件大小超出限制");
         }
@@ -65,16 +61,10 @@ public class FileController {
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String format = LocalDate.now().format(formatter);
-        String uploadKey = String.format("%s/%s", fileUploadEnum.getType(),format);
-        
-        try {
-            String url = ossManager.putObject(uploadKey, multipartFile);
-            log.info("文件上传成功，业务类型：{}", params.getBiz());
-            return ResultUtils.success(url);
-        } catch (Exception e) {
-            log.error("文件上传失败：", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件上传失败");
-        }
+        String uploadPath = String.format("%s/%s/%s", fileUploadEnum.getType(),format, multipartFile.getOriginalFilename());
+
+        String url = ossManager.putObject(uploadPath, multipartFile);
+        return ResultUtils.success(url);
     }
 
 }

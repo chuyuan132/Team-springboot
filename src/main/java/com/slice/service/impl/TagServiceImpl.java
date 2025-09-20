@@ -9,8 +9,11 @@ import com.slice.enums.ErrorCode;
 import com.slice.exception.BusinessException;
 import com.slice.mapper.TagMapper;
 import com.slice.service.TagService;
+import com.slice.vo.tag.TagQueryVo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+
+import java.util.*;
 
 /**
 * @author zhangchuyuan
@@ -27,9 +30,12 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
     @Override
     public void tagCreate(TagCreateRequest tagCreateRequest) {
+        if(tagCreateRequest.getName() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         QueryWrapper<Tag> tagQueryWrapper = new QueryWrapper<>();
         String name = tagCreateRequest.getName();
-        long parentId = tagCreateRequest.getParentId();
+        Long parentId = tagCreateRequest.getParentId();
         tagQueryWrapper.eq("name", name);
         Tag tag = tagMapper.selectOne(tagQueryWrapper);
         if(tag != null) {
@@ -47,6 +53,9 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
 
     @Override
     public void tagUpdate(TagUpdateRequest tagUpdateRequest) {
+        if(tagUpdateRequest.getId() == null || tagUpdateRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         Tag tag = new Tag();
         tag.setId(tag.getId());
         tag.setName(tagUpdateRequest.getName());
@@ -55,5 +64,42 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag>
         if(i <=0) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"更新失败");
         }
+    }
+
+    @Override
+    public void tagDelete(Long id) {
+        if(id == null || id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        int i = tagMapper.deleteById(id);
+        if(i <=0) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除失败");
+        }
+    }
+
+    @Override
+    public List<TagQueryVo> tagQueryList() {
+        List<Tag> tags = tagMapper.selectList(new QueryWrapper<>());
+        Map<Long, TagQueryVo> longTagQueryVoMap = new HashMap<>();
+        for(Tag tag : tags) {
+            TagQueryVo tagQueryVo = new TagQueryVo();
+            tagQueryVo.setChildren(new ArrayList<>());
+            tagQueryVo.setName(tag.getName());
+            tagQueryVo.setParentId(tag.getParentId());
+            longTagQueryVoMap.put(tag.getId(), tagQueryVo);
+        }
+        ArrayList<TagQueryVo> tagQueryVos = new ArrayList<>();
+        for(Tag tag : tags) {
+            if(tag.getParentId() == 0) {
+                tagQueryVos.add(longTagQueryVoMap.get(tag.getId()));
+            } else {
+                TagQueryVo parent = longTagQueryVoMap.get(tag.getParentId());
+                if(parent != null) {
+                    parent.getChildren().add(longTagQueryVoMap.get(tag.getId()));
+                }
+
+            }
+        }
+        return tagQueryVos;
     }
 }
