@@ -2,6 +2,7 @@ package com.slice.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.slice.common.BaseResponse;
+import com.slice.common.PageRequest;
 import com.slice.constant.UserConstant;
 import com.slice.dao.user.UserQueryRequest;
 import com.slice.dao.user.UserUpdateRequest;
@@ -15,9 +16,12 @@ import com.slice.vo.user.UserInfoVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 用户服务控制层
@@ -36,10 +40,11 @@ public class UserController {
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         String password = userRegisterRequest.getPassword();
         String phone = userRegisterRequest.getPhone();
-        if(StringUtils.isAnyBlank(password, phone)) {
+        String username = userRegisterRequest.getUsername();
+        if(StringUtils.isAnyBlank(password, phone, username)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        userService.userRegister(phone, password);
+        userService.userRegister(phone, password, username);
         return ResultUtils.success(null);
     }
 
@@ -59,10 +64,14 @@ public class UserController {
 
     @GetMapping("/list")
     @Operation(summary = "分页查询用户")
-    public BaseResponse<Page<UserInfoVO>> userQueryByPage(UserQueryRequest userQueryRequest) {
-        if(userQueryRequest.getPageNo() <= 0 || userQueryRequest.getPageSize() <= 0) {
+    public BaseResponse<Page<UserInfoVO>> userQueryByPage(@RequestParam(value = "tag_list", required = false) List<String> tagList,@RequestParam("page_size") long pageSize,@RequestParam("page_no") long pageNo) {
+        if(pageNo <= 0 || pageSize <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "分页参数错误");
         }
+        UserQueryRequest userQueryRequest = new UserQueryRequest();
+        userQueryRequest.setTagList(tagList);
+        userQueryRequest.setPageNo(pageNo);
+        userQueryRequest.setPageSize(pageSize);
         Page<UserInfoVO> userInfoVOPage = userService.userQuery(userQueryRequest);
         return ResultUtils.success(userInfoVOPage);
     }

@@ -53,7 +53,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
 
     @Override
-    public void userRegister(String phone, String password) {
+    public void userRegister(String phone, String password, String username) {
+        if(StringUtils.isAnyBlank(password, phone, username)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         synchronized (phone.intern()) {
             Matcher matcher = Pattern.compile("^1[3-9]\\d{9}$").matcher(phone);
 
@@ -73,6 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 User newUser = new User();
                 newUser.setPhone(phone);
                 newUser.setPassword(newPassword);
+                newUser.setUsername(username);
                 int saveResult = userMapper.insert(newUser);
                 if(saveResult <= 0) {
                     throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户注册失败");
@@ -125,15 +129,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(userQueryRequest.getPageNo() <= 0 || userQueryRequest.getPageSize() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "分页参数错误");
         }
-        String phone = userQueryRequest.getPhone();
         String username = userQueryRequest.getUsername();
-        int pageNo = userQueryRequest.getPageNo();
-        int pageSize = userQueryRequest.getPageSize();
+        Long pageNo = userQueryRequest.getPageNo();
+        Long pageSize = userQueryRequest.getPageSize();
         List<String> tagList = userQueryRequest.getTagList();
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
-        if(StringUtils.isNotBlank(phone)) {
-            userQueryWrapper.eq("phone", phone);
-        }
+
         if(StringUtils.isNotBlank(username)) {
             userQueryWrapper.like("username", username);
         }
@@ -142,7 +143,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 userQueryWrapper.like("tag_list", val);
             });
         }
-        log.info("分页查询用户，页码：{}, 每页大小：{}", pageNo, pageSize);
         Page<User> userPage = userMapper.selectPage(new Page<>(pageNo, pageSize), userQueryWrapper);
         // 转换对象
         List<UserInfoVO> userInfoVOS = userPage.getRecords().stream()
